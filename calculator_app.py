@@ -2,38 +2,82 @@ import streamlit as st
 import math, cmath
 
 # ==============================
-# PAGE SETUP
+# PAGE CONFIG
 # ==============================
-st.set_page_config(page_title="Advanced Calculator", page_icon="🧮", layout="centered")
+st.set_page_config(page_title="Pro Calculator", page_icon="🧮", layout="centered")
 
-# Custom CSS for styling (dark & light themes)
+# ==============================
+# CUSTOM CSS STYLE
+# ==============================
 st.markdown("""
 <style>
-    .stTextInput input {
-        font-size: 20px !important;
+    body {
+        background-color: #0f1116;
+    }
+    .main {
+        background-color: #0f1116;
+        color: white;
+    }
+    .calc-container {
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px;
+        border-radius: 20px;
+        background-color: #1e1e2f;
+        box-shadow: 0 0 25px rgba(0,0,0,0.5);
+        width: 340px;
+        margin: auto;
+    }
+    .screen {
+        background-color: #000;
+        color: #0f0;
+        font-size: 28px;
+        border-radius: 10px;
+        padding: 15px;
+        width: 100%;
         text-align: right;
+        margin-bottom: 15px;
+        font-family: 'Consolas', monospace;
     }
-    .calc-button {
+    .button-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-gap: 10px;
+        width: 100%;
+    }
+    .button {
+        border: none;
         font-size: 20px;
-        width: 70px;
-        height: 70px;
-        margin: 5px;
-        border-radius: 15px;
+        border-radius: 10px;
+        padding: 15px;
         font-weight: bold;
+        transition: all 0.2s ease;
     }
-    .title {
-        text-align: center;
-        font-size: 30px;
-        color: #10c132;
-        font-weight: 700;
+    .button:hover {
+        transform: scale(1.05);
+    }
+    .num { background-color: #2c2c3a; color: white; }
+    .op { background-color: #0078ff; color: white; }
+    .func { background-color: #ff9900; color: black; }
+    .clear { background-color: #ff4444; color: white; }
+    .equal { background-color: #00c853; color: white; }
+    .history {
+        margin-top: 25px;
+        background: #14141f;
+        padding: 10px;
+        border-radius: 10px;
+        width: 100%;
+        font-family: monospace;
+        font-size: 15px;
+        color: #bbb;
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<div class='title'>🧮 Advanced Python Calculator</div>", unsafe_allow_html=True)
-
 # ==============================
-# ENVIRONMENT
+# FUNCTIONS AND ENVIRONMENT
 # ==============================
 env = {
     "sin": lambda x: math.sin(math.radians(x)),
@@ -56,33 +100,15 @@ env = {
     "__builtins__": {},
 }
 
-# ==============================
-# HISTORY (Saves past calculations)
-# ==============================
+if "expr" not in st.session_state:
+    st.session_state.expr = ""
 if "history" not in st.session_state:
     st.session_state.history = []
 
 # ==============================
-# DISPLAY
+# FUNCTIONS
 # ==============================
-expr = st.session_state.get("expr", "")
-
-st.text_input("Expression", value=expr, key="expr", label_visibility="collapsed")
-
-col1, col2, col3, col4 = st.columns(4)
-
-# Button Layout
-buttons = [
-    ["7", "8", "9", "/"],
-    ["4", "5", "6", "*"],
-    ["1", "2", "3", "-"],
-    ["0", ".", "(", ")"],
-    ["sin", "cos", "tan", "+"],
-    ["sqrt", "log", "fact", "="],
-    ["C", "DEL", "pi", "e"],
-]
-
-def click_button(btn):
+def press(btn):
     if btn == "C":
         st.session_state.expr = ""
     elif btn == "DEL":
@@ -92,20 +118,47 @@ def click_button(btn):
             result = eval(st.session_state.expr, env)
             st.session_state.history.insert(0, f"{st.session_state.expr} = {result}")
             st.session_state.expr = str(result)
-        except Exception as e:
+        except:
             st.session_state.expr = "Error"
     else:
         st.session_state.expr += btn
 
-# Create all buttons
+# ==============================
+# CALCULATOR UI
+# ==============================
+st.markdown("<div class='calc-container'>", unsafe_allow_html=True)
+st.markdown(f"<div class='screen'>{st.session_state.expr}</div>", unsafe_allow_html=True)
+
+# Button layout
+buttons = [
+    ["7", "8", "9", "/"],
+    ["4", "5", "6", "*"],
+    ["1", "2", "3", "-"],
+    ["0", ".", "(", ")"],
+    ["sin", "cos", "tan", "+"],
+    ["sqrt", "log", "fact", "="],
+    ["pi", "e", "DEL", "C"],
+]
+
+st.markdown("<div class='button-grid'>", unsafe_allow_html=True)
+
 for row in buttons:
-    cols = st.columns(4)
-    for i, btn in enumerate(row):
-        cols[i].button(btn, key=btn + str(row), on_click=click_button, args=(btn,), use_container_width=True)
+    for btn in row:
+        color_class = (
+            "num" if btn.isdigit() or btn == "." else
+            "op" if btn in ["+", "-", "*", "/", "(", ")"] else
+            "func" if btn in ["sin", "cos", "tan", "sqrt", "log", "fact", "pi", "e"] else
+            "equal" if btn == "=" else
+            "clear"
+        )
+        if st.button(btn, key=btn, help=btn):
+            press(btn)
+
+st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # ==============================
-# HISTORY DISPLAY
+# HISTORY
 # ==============================
-st.subheader("📜 History")
-for item in st.session_state.history[:5]:
-    st.text(item)
+if st.session_state.history:
+    st.markdown("<div class='history'><b>📜 History:</b><br>" + "<br>".join(st.session_state.history[:5]) + "</div>", unsafe_allow_html=True)
